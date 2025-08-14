@@ -37,7 +37,7 @@ from urllib.parse import quote_plus
 from LucyBot.util.file_properties import get_name, get_hash, get_media_file_size
 from database.config_db import mdb
 from database.watermark_db import watermark_db
-from ..utils.watermark_utils import download_image, apply_watermark, append_username_to_filename
+from utils.watermark_utils import download_image, apply_watermark, append_username_to_filename
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
@@ -2862,7 +2862,7 @@ async def auto_filter(client, msg, spoll=False):
     if not spoll:
         message = msg
         if message.text.startswith("/"): return  # ignore commands
-        if re.findall("((^\/|^,|^!|^\.|^[\U0001F600-\U000E007F]).*)", message.text):
+        if re.findall("((^/|^,|^!|^[.]|^[\U0001F600-\U000E007F]).*)", message.text):
             return
         if len(message.text) < 100:
             search = message.text         
