@@ -37,7 +37,7 @@ from urllib.parse import quote_plus
 from LucyBot.util.file_properties import get_name, get_hash, get_media_file_size
 from database.config_db import mdb
 from database.watermark_db import watermark_db
-from watermark_utils import download_image, apply_watermark, append_username_to_filename
+from watermark_utils import download_image, download_file_cover, apply_watermark, append_username_to_filename
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
@@ -66,7 +66,11 @@ def generate_random_alphanumeric():
   
 def get_shortlink_sync(url):
     try:
-        rget = requests.get(f"https://{STREAM_SITE}/api?api={STREAM_API}&url={url}&alias={generate_random_alphanumeric()}")
+        stream_site = os.environ.get("STREAM_SITE", "")
+        stream_api = os.environ.get("STREAM_API", "")
+        if not stream_site or not stream_api:
+            return url
+        rget = requests.get(f"https://{stream_site}/api?api={stream_api}&url={url}&alias={generate_random_alphanumeric()}")
         rjson = rget.json()
         if rjson["status"] == "success" or rget.status_code == 200:
             return rjson["shortenedUrl"]
@@ -1177,9 +1181,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
                             if poster_url:
                                 thumb_source = await download_image(poster_url)
                             else:
-                                thumb_source = None
-                            # Apply watermark if we have any image data or file_cover; watermark util will fetch settings
-                            if thumb_source or file_cover:
+                                thumb_source = await download_file_cover(client, file_cover)
+                            # Apply watermark if we have any image data; watermark util will fetch settings
+                            if thumb_source:
                                 thumb_bytes = await apply_watermark(thumb_source, client=client)
 
                         # Send media
@@ -1188,7 +1192,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                                 chat_id=query.from_user.id,
                                 video=file_id,
                                 caption=f_caption + (f"\n\n{watermark_text}" if watermark_text else ""),
-                                thumb=thumb_bytes,
+                                thumb=thumb_bytes if thumb_bytes else None,
                                 protect_content=(ident == "filep")
                             )
                         else:
@@ -1275,20 +1279,22 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     # Download the poster or use file cover
                     image_path = None
                     if poster_url:
-                        image_path = await download_image(poster_url)
+                        image_data = await download_image(poster_url)
                     elif file_cover:
-                        image_path = file_cover
-                        
-						if image_path:
-							# Apply watermark to the image (utility fetches settings internally)
-							watermarked_image = await apply_watermark(image_path, client=client)
+                        image_data = await download_file_cover(client, file_cover)
+                    else:
+                        image_data = None
+                    
+                    if image_data:
+                        # Apply watermark to the image (utility fetches settings internally)
+                        watermarked_image = await apply_watermark(image_data, client=client)
                         
                         # Send the file with the watermarked thumbnail
                         await client.send_video(
                             chat_id=query.from_user.id,
                             video=file_data["file_id"],
                             caption=file_data["caption"] + (f"\n\n{watermark_text}" if watermark_text else ""),
-                            thumb=watermarked_image,
+                            thumb=watermarked_image if image_data else None,
                             protect_content=file_data["protect"]
                         )
                     else:
@@ -1374,7 +1380,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
     
     elif query.data.startswith("send_fsall"):
         temp_var, ident, key, offset = query.data.split("#")
-        search = BUTTON0.get(key)
+        search = BUTTONS0.get(key)
         if not search:
             await query.answer(script.OLD_ALRT_TXT.format(query.from_user.first_name),show_alert=True)
             return
