@@ -16,46 +16,46 @@ class WatermarkDB:
                 'file_cover': None
             })
     
-    async def set_watermark_text(self, text):
+    def set_watermark_text(self, text):
         """Set the watermark text to be placed at the bottom of thumbnails"""
-        await self.col.update_one(
+        self.col.update_one(
             {'_id': 'settings'},
             {'$set': {'watermark_text': text}},
             upsert=True
         )
         return True
     
-    async def get_watermark_text(self):
+    def get_watermark_text(self):
         """Get the current watermark text"""
-        settings = await self.col.find_one({'_id': 'settings'})
+        settings = self.col.find_one({'_id': 'settings'})
         return settings.get('watermark_text', '') if settings else ''
     
-    async def set_watermark_username(self, username):
+    def set_watermark_username(self, username):
         """Set the watermark username to be appended to file names"""
-        await self.col.update_one(
+        self.col.update_one(
             {'_id': 'settings'},
             {'$set': {'watermark_username': username}},
             upsert=True
         )
         return True
     
-    async def get_watermark_username(self):
+    def get_watermark_username(self):
         """Get the current watermark username"""
-        settings = await self.col.find_one({'_id': 'settings'})
+        settings = self.col.find_one({'_id': 'settings'})
         return settings.get('watermark_username', '') if settings else ''
     
-    async def set_file_cover(self, file_id):
+    def set_file_cover(self, file_id):
         """Set the file cover (logo) to be placed on thumbnails"""
-        await self.col.update_one(
+        self.col.update_one(
             {'_id': 'settings'},
             {'$set': {'file_cover': file_id}},
             upsert=True
         )
         return True
     
-    async def get_file_cover(self):
+    def get_file_cover(self):
         """Get the current file cover (logo)"""
-        settings = await self.col.find_one({'_id': 'settings'})
+        settings = self.col.find_one({'_id': 'settings'})
         return settings.get('file_cover', None) if settings else None
 
 watermark_db = WatermarkDB()

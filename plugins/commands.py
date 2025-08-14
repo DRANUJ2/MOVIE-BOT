@@ -1549,7 +1549,7 @@ async def set_watermark_text(client, message):
         from database.watermark_db import watermark_db
         
         # Save the watermark text
-        success = await watermark_db.set_watermark_text(watermark_text)
+        success = watermark_db.set_watermark_text(watermark_text)
         
         if success:
             await message.reply_text(f"✅ Watermark text set successfully to:\n<code>{watermark_text}</code>")
@@ -1576,7 +1576,7 @@ async def set_watermark_username(client, message):
         from database.watermark_db import watermark_db
         
         # Save the watermark username
-        success = await watermark_db.set_watermark_username(watermark_username)
+        success = watermark_db.set_watermark_username(watermark_username)
         
         if success:
             await message.reply_text(f"✅ Watermark username set successfully to:\n<code>{watermark_username}</code>\n\nThis will be appended to file names like:\n<code>MovieName (2024) 720p {watermark_username}.mkv</code>")
@@ -1604,7 +1604,7 @@ async def set_file_cover(client, message):
         from database.watermark_db import watermark_db
         
         # Save the file cover
-        success = await watermark_db.set_file_cover(photo)
+        success = watermark_db.set_file_cover(photo)
         
         if success:
             await message.reply_text("✅ File cover (logo) set successfully. This will appear on all thumbnails.")
@@ -1623,13 +1623,13 @@ async def clear_watermark(client, message):
         from database.watermark_db import watermark_db
         
         # Clear watermark text
-        await watermark_db.set_watermark_text('')
+        watermark_db.set_watermark_text('')
         
         # Clear watermark username
-        await watermark_db.set_watermark_username('')
+        watermark_db.set_watermark_username('')
         
         # Clear file cover
-        await watermark_db.set_file_cover(None)
+        watermark_db.set_file_cover(None)
         
         await message.reply_text("✅ All watermark settings cleared successfully.")
             
@@ -1645,9 +1645,9 @@ async def watermark_status(client, message):
         from database.watermark_db import watermark_db
         
         # Get current settings
-        watermark_text = await watermark_db.get_watermark_text()
-        watermark_username = await watermark_db.get_watermark_username()
-        file_cover = await watermark_db.get_file_cover()
+        watermark_text = watermark_db.get_watermark_text()
+        watermark_username = watermark_db.get_watermark_username()
+        file_cover = watermark_db.get_file_cover()
         
         status_text = "📝 <b>Current Watermark Settings:</b>\n\n"
         status_text += f"<b>Watermark Text:</b> {watermark_text or 'Not set'}\n"

@@ -1161,7 +1161,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             await query.answer('File sent as document!', show_alert=True)
             
             # Apply username watermark to filename if set
-            watermark_username = await watermark_db.get_watermark_username()
+            watermark_username = watermark_db.get_watermark_username()
             if watermark_username:
                 new_filename = append_username_to_filename(file_data["title"], watermark_username)
                 await query.message.reply_text(f"File saved as: {new_filename}")
@@ -1179,9 +1179,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
         
         try:
             # Get watermark settings
-            watermark_text = await watermark_db.get_watermark_text()
-            watermark_username = await watermark_db.get_watermark_username()
-            file_cover = await watermark_db.get_file_cover()
+            watermark_text = watermark_db.get_watermark_text()
+            watermark_username = watermark_db.get_watermark_username()
+            file_cover = watermark_db.get_file_cover()
             
             # Try to get IMDB poster for the file
             from database.Imdbposter import get_poster

@@ -37,8 +37,8 @@ async def apply_watermark(image_data, client=None):
     """Apply watermark text and logo to an image"""
     try:
         # Get watermark settings
-        watermark_text = await watermark_db.get_watermark_text()
-        file_cover_id = await watermark_db.get_file_cover()
+        watermark_text = watermark_db.get_watermark_text()
+        file_cover_id = watermark_db.get_file_cover()
         
         # Open the image
         img = Image.open(BytesIO(image_data))
@@ -102,7 +102,7 @@ async def apply_watermark(image_data, client=None):
 async def append_username_to_filename(filename):
     """Append watermark username to filename"""
     try:
-        watermark_username = await watermark_db.get_watermark_username()
+        watermark_username = watermark_db.get_watermark_username()
         if not watermark_username:
             return filename
             
