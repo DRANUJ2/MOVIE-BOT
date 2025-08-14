@@ -37,7 +37,7 @@ from urllib.parse import quote_plus
 from LucyBot.util.file_properties import get_name, get_hash, get_media_file_size
 from database.config_db import mdb
 from database.watermark_db import watermark_db
-from utils.watermark_utils import download_image, apply_watermark, append_username_to_filename
+from watermark_utils import download_image, apply_watermark, append_username_to_filename
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.ERROR)
 
