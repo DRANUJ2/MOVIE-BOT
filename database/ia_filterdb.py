@@ -18,6 +18,7 @@ logger.setLevel(logging.INFO)
 #---------------------------------------------------------
 # Some basic variables needed
 tempDict = {'indexDB': DATABASE_URI}
+saveMedia = None
 
 # Primary DB
 client = AsyncIOMotorClient(DATABASE_URI)

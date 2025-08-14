@@ -175,11 +175,6 @@ SESSION_NAME = str(environ.get('SESSION_NAME', 'AnujBot'))
 MULTI_CLIENT = False
 name = str(environ.get('name', 'Anuj'))
 PING_INTERVAL = int(environ.get("PING_INTERVAL", "1200"))  # 20 minutes
-if 'DYNO' in environ:
-    ON_HEROKU = True
-    APP_NAME = str(getenv('APP_NAME'))
-else:
-    ON_HEROKU = False
 HAS_SSL = bool(getenv('HAS_SSL', True))
 if HAS_SSL:
     URL = "https://{}/".format(FQDN)
