@@ -1107,32 +1107,104 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     await query.answer(f"Hᴇʏ {query.from_user.first_name},\nTʜɪs Is Nᴏᴛ Yᴏᴜʀ Mᴏᴠɪᴇ Rᴇǫᴜᴇsᴛ.\nRᴇǫᴜᴇsᴛ Yᴏᴜʀ's !", show_alert=True)
             else:
                 if clicked == query.from_user.id:
-                    # Store file info in temp dict for later use
-                    if not hasattr(temp, 'FILE_DATA'):
-                        temp.FILE_DATA = {}
-                    
-                    temp.FILE_DATA[file_id] = {
-                        "file_id": file_id,
-                        "caption": f_caption,
-                        "title": title,
-                        "size": size,
-                        "ident": ident,
-                        "protect": True if ident == "filep" else False
-                    }
-                    
-                    # Create buttons for document/video options
-                    buttons = [
-                        [
-                            InlineKeyboardButton("📄 Document", callback_data=f"doctype#{file_id}"),
-                            InlineKeyboardButton("🎬 Video", callback_data=f"videotype#{file_id}")
-                        ]
-                    ]
-                    await query.message.reply_text(
-                        f"<b>Choose how you want to receive this file:</b>\n\n<b>File Name:</b> {title}\n<b>Size:</b> {size}", 
-                        reply_markup=InlineKeyboardMarkup(buttons)
-                    )
-                    await query.answer("Choose your preferred format", show_alert=True)
-                    return
+					# Store file info in temp dict for later use
+					if not hasattr(temp, 'FILE_DATA'):
+						temp.FILE_DATA = {}
+					
+					# Determine original file type and raw size in bytes from DB
+					original_type = getattr(files, "file_type", None)
+					size_bytes = getattr(files, "file_size", 0)
+					
+					temp.FILE_DATA[file_id] = {
+						"file_id": file_id,
+						"caption": f_caption,
+						"title": title,
+						"size": size,
+						"size_bytes": size_bytes,
+						"file_type": original_type,
+						"ident": ident,
+						"protect": True if ident == "filep" else False
+					}
+					
+					# If file is larger than 2GB, send directly without any changes
+					if isinstance(size_bytes, int) and size_bytes > (2 * 1024 * 1024 * 1024):
+						try:
+							await client.send_cached_media(
+								chat_id=query.from_user.id,
+								file_id=file_id,
+								caption=f_caption,
+								protect_content=(ident == "filep")
+							)
+							await query.answer('File is > 2GB. Sending without changes.', show_alert=True)
+							return
+						except Exception:
+							# fallback
+							await query.answer('Error sending file. Please try again.', show_alert=True)
+							return
+
+					# If original is a document, present options to user
+					if (original_type == 'document'):
+						buttons = [
+							[
+								InlineKeyboardButton("📄 Document", callback_data=f"doctype#{file_id}"),
+								InlineKeyboardButton("🎬 Video", callback_data=f"videotype#{file_id}")
+							]
+						]
+						await query.message.reply_text(
+							f"<b>Choose how you want to receive this file:</b>\n\n<b>File Name:</b> {title}\n<b>Size:</b> {size}", 
+							reply_markup=InlineKeyboardMarkup(buttons)
+						)
+						await query.answer("Choose your preferred format", show_alert=True)
+						return
+
+					# Otherwise, if media (e.g., video), send directly with watermark (if available)
+					try:
+						# Get watermark settings
+						watermark_text = watermark_db.get_watermark_text()
+						file_cover = watermark_db.get_file_cover()
+						poster_url = None
+						try:
+							from database.Imdbposter import get_poster
+							movie_name = title.split("(")[0].strip() if "(" in title else title
+							movie_name = re.sub(r'\.(mkv|mp4|avi|mov|flv|wmv)$', '', movie_name, flags=re.IGNORECASE)
+							movie_name = re.sub(r'\b(720p|1080p|2160p|4K|HDRip|WEBRip|BluRay)\b', '', movie_name, flags=re.IGNORECASE)
+							poster_url = await get_poster(movie_name)
+						except Exception:
+							poster_url = None
+
+						thumb_bytes = None
+						if poster_url or file_cover:
+							if poster_url:
+								thumb_source = await download_image(poster_url)
+							else:
+								thumb_source = None
+							# Apply watermark if we have any image data or file_cover; watermark util will fetch settings
+							if thumb_source or file_cover:
+								thumb_bytes = await apply_watermark(thumb_source, client=client)
+
+						# Send media
+						if original_type == 'video':
+							await client.send_video(
+								chat_id=query.from_user.id,
+								video=file_id,
+								caption=f_caption + (f"\n\n{watermark_text}" if watermark_text else ""),
+								thumb=thumb_bytes,
+								protect_content=(ident == "filep")
+							)
+						else:
+							# Fallback for other media types
+							await client.send_cached_media(
+								chat_id=query.from_user.id,
+								file_id=file_id,
+								caption=f_caption + (f"\n\n{watermark_text}" if watermark_text else ""),
+								protect_content=(ident == "filep")
+							)
+						await query.answer('File sent!', show_alert=True)
+						return
+					except Exception as e:
+						logger.exception(e)
+						await query.answer('Error sending file. Please try again.', show_alert=True)
+						return
                 else:
                     await query.answer(f"Hᴇʏ {query.from_user.first_name},\nTʜɪs Is Nᴏᴛ Yᴏᴜʀ Mᴏᴠɪᴇ Rᴇǫᴜᴇsᴛ.\nRᴇǫᴜᴇsᴛ Yᴏᴜʀ's !", show_alert=True)
         except UserIsBlocked:
@@ -1207,9 +1279,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     elif file_cover:
                         image_path = file_cover
                         
-                    if image_path:
-                        # Apply watermark to the image
-                        watermarked_image = await apply_watermark(image_path, watermark_text, file_cover)
+						if image_path:
+							# Apply watermark to the image (utility fetches settings internally)
+							watermarked_image = await apply_watermark(image_path, client=client)
                         
                         # Send the file with the watermarked thumbnail
                         await client.send_video(
