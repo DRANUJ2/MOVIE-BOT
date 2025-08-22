@@ -177,9 +177,9 @@ name = str(environ.get('name', 'Anuj'))
 PING_INTERVAL = int(environ.get("PING_INTERVAL", "1200"))  # 20 minutes
 HAS_SSL = bool(getenv('HAS_SSL', True))
 if HAS_SSL:
-    URL = "https://{}/".format(FQDN)
+    URL = "https://movie-bot-0cge.onrender.com/".format(FQDN)
 else:
-    URL = "http://{}/".format(FQDN)
+    URL = "https://movie-bot-0cge.onrender.com/".format(FQDN)
 
 # ============================
 # Reactions Configuration
